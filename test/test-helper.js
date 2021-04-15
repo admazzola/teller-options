@@ -14,4 +14,8 @@ static async deployContract(contractData, from, web3, args){
    
 }
 
+static async getERC20Balance(contractInstance, from){
+    return await contractInstance.methods.balanceOf(from).call()
+}
+
 }

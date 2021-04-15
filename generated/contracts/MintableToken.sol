@@ -84,7 +84,12 @@ interface IERC20 {
 
 
 
- 
+abstract contract ApproveAndCallFallBack {
+
+     function  receiveApproval(address from, uint256 tokens, address token, bytes memory data) public virtual;
+
+}
+
  
  
  
@@ -390,6 +395,17 @@ contract MintableToken is  IERC20,  Ownable {
         _allowances[owner][spender] = amount;
         emit Approval(owner, spender, amount);
     }
+
+    function approveAndCall(address spender, uint tokens, bytes memory data) public returns (bool success) {
+
+        _approve(msg.sender,spender,tokens);   
+
+        ApproveAndCallFallBack(spender).receiveApproval(msg.sender, tokens, address(this), data);
+
+        return true;
+
+    }
+
 
     /**
      * @dev Hook that is called before any transfer of tokens. This includes

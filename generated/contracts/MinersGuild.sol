@@ -143,8 +143,8 @@ contract MinersGuild is
       
        uint256 totalReserveTokens = IERC20(_reservePoolToken).totalSupply(); 
     
-      //mint reserve token for the staker  
-      MintableERC20(_reservePoolToken).mint(from,  _reserveTokensMinted( _stakeableCurrency, currencyAmount, totalReserveTokens) ) ;
+      //mint reserve token for the staker   - REVERTING 
+       MintableERC20(_reservePoolToken).mint(from,  _reserveTokensMinted( _stakeableCurrency, currencyAmount, totalReserveTokens) ) ;
       
      return true; 
   }
@@ -199,9 +199,9 @@ contract MinersGuild is
   
   
     function receiveApproval(address from, uint256 tokens, address token, bytes memory data) public override{
-        require(token == _stakeableCurrency);
+      require(token == _stakeableCurrency);
       
-        stakeCurrency(from, tokens);
+       stakeCurrency(from, tokens);  
     }
     
    

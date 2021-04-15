@@ -4,7 +4,8 @@ import path from 'path'
 
 import ganache from 'ganache-cli' 
 import  Web3 from 'web3' 
- 
+import { expect } from 'chai';
+
 import TestHelper from './test-helper.js'
 
 let testAccount = {
@@ -26,11 +27,7 @@ const OPTIONS = {
  
  
 const web3 = new Web3(provider, null, OPTIONS);
-
-let customConfigJSON = fs.readFileSync(path.join('eip712-config.json'));
-let customConfig = JSON.parse(customConfigJSON)
  
-
 
 let tokenContractJSON = fs.readFileSync(path.join('generated/built/MintableToken.json'));
 let tokenContractData = JSON.parse(tokenContractJSON)
@@ -38,58 +35,57 @@ let tokenContractData = JSON.parse(tokenContractJSON)
 
 let guildContractJSON = fs.readFileSync(path.join('generated/built/MinersGuild.json'));
 let guildContractData = JSON.parse(guildContractJSON)
+ 
+let primaryAccountAddress = testAccount.publicAddress
 
-//let abi = contractData.abi
-//let evm = contractData.evm
+
+var contractInstances  = {} 
 
 describe("EIP712 Contract Testing", function() {
     it("deploys contract", async function() {
  
      
-      let primaryAccountAddress = testAccount.publicAddress
+     // let primaryAccountAddress = testAccount.publicAddress
 
 
-      let stakeableTokenContractInstance = await TestHelper.deployContract(tokenContractData ,primaryAccountAddress, web3, [8])
-      let reserveTokenContractInstance = await TestHelper.deployContract(tokenContractData ,primaryAccountAddress, web3, [8])
+     contractInstances['stakeabletoken'] = await TestHelper.deployContract(tokenContractData ,primaryAccountAddress, web3, [8])
+     contractInstances['reservetoken'] = await TestHelper.deployContract(tokenContractData ,primaryAccountAddress, web3, [8])
 
-      let guildContractInstance = await TestHelper.deployContract(guildContractData ,primaryAccountAddress, web3, [stakeableTokenContractInstance.options.address, reserveTokenContractInstance.options.address])
+     contractInstances['guild'] = await TestHelper.deployContract(guildContractData ,primaryAccountAddress, web3, [contractInstances['stakeabletoken'].options.address, contractInstances['reservetoken'].options.address])
 
      
    
-      console.log("deployed contract at ", guildContractInstance.options.address)
+      //console.log("deployed contract at ", contractInstances['guild'].options.address)
+      expect( contractInstances['guild'].options.address ).to.exist;
+    });
 
-      return 
-
-      /*
-      MAKE SURE YOU CHANGE THIS VARIABLE IF YOU MODIFY eip712-config.json!!!
-      */
-      let dataValues = {
-        customName:"myName",
-        bidderAddress: primaryAccountAddress,
-        nftContractAddress:"0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC",
-        currencyTokenAddress:"0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC",
-        currencyTokenAmount:100,
-        requireProjectId:true,
-        projectId:123,
-        expires:50000 
-    }
+    it("calls methods ", async function() {
 
 
 
-    console.log('chainId', chainId)
+      await contractInstances['reservetoken'].methods.transferOwnership(contractInstances['guild'].options.address).send({from: primaryAccountAddress})
+      
+      let newOwner = await contractInstances['reservetoken'].methods.owner().call()
+      expect( newOwner ).to.equal( contractInstances['guild'].options.address );
+ 
+      await contractInstances['stakeabletoken'].methods.mint(primaryAccountAddress, 9000).send({from: primaryAccountAddress})
+       
+      let myBalance = await TestHelper.getERC20Balance( contractInstances['stakeabletoken'] , primaryAccountAddress   )
 
-    const typedData = EIP712Utils.getTypedDataFromParams( 
-      chainId,  
-      contractAddress,
-      customConfig,
-      dataValues  
-    )
+      expect( parseInt(myBalance) ).to.equal( 9000 );
 
-    console.log('typedData', (typedData))
-    let typedDatahash = EIP712Utils.getTypedDataHash(typedData) 
 
+
+      await contractInstances['stakeabletoken'].methods.transfer(contractInstances['guild'].options.address, 1000).send({from: primaryAccountAddress})
      
 
+      await contractInstances['stakeabletoken'].methods.approveAndCall(contractInstances['guild'].options.address, 1000, '0x0').send({from: primaryAccountAddress,  gasLimit: 8000000 })
+
+      myBalance = await TestHelper.getERC20Balance( contractInstances['stakeabletoken'] , primaryAccountAddress   )
+
+       expect( parseInt(myBalance) ).to.equal( 7000 );
+     
+    });
  
 
     /*
@@ -104,7 +100,7 @@ describe("EIP712 Contract Testing", function() {
     */
 
 
-
+/*
    
     var privateKey = testAccount.secretKey;
     var privKey = Buffer.from(privateKey.substring(2), 'hex')
@@ -130,5 +126,5 @@ describe("EIP712 Contract Testing", function() {
       let result = await myEIP712Contract.methods.verifyOffchainSignatureAndDoStuff(...args).send({from:  primaryAccountAddress })
 
       console.log("result of method call: ", result)
-    });
+    });*/
   });
