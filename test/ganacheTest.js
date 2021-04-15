@@ -124,6 +124,22 @@ describe("EIP712 Contract Testing", function() {
        myBalance = await TestHelper.getERC20Balance( contractInstances['stakeabletoken'] , primaryAccountAddress   )
        expect( parseInt(myBalance) ).to.equal( 7099 );
 
+
+       await contractInstances['stakeabletoken'].methods.transfer(contractInstances['guild'].options.address, 1000).send({from: secondaryAccountAddress})
+     
+       outputAmount =  await contractInstances['guild'].methods._vaultOutputAmount(499).call()
+       expect( parseInt( outputAmount ) ).to.equal(  670  );
+
+
+       //test in and out after donation 
+ 
+       await contractInstances['stakeabletoken'].methods.approveAndCall(contractInstances['guild'].options.address, 1000, '0x0').send({from: primaryAccountAddress,  gasLimit: 8000000 })
+       myReserve = await TestHelper.getERC20Balance( contractInstances['reservetoken'] , primaryAccountAddress   )
+       expect( parseInt(myReserve) ).to.equal( 2643 );
+
+         outputAmount =  await contractInstances['guild'].methods._vaultOutputAmount(743).call()
+       expect( parseInt( outputAmount ) ).to.equal(  999 );
+ 
       // await contractInstances['guild'].methods.reserveTokensMinted(contractInstances['guild'].options.address, 1000, '0x0').send({from: primaryAccountAddress,  gasLimit: 8000000 })
 
      
