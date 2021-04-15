@@ -154,16 +154,16 @@ contract MinersGuild is
   }
   
    
-  function unstakeCurrency( uint256 reserveTokenAmount ) public returns (bool){
+  function unstakeCurrency( uint256 reserveTokenAmount, address currencyToClaim) public returns (bool){
         
      
-      uint256 vaultOutputAmount =  _vaultOutputAmount( reserveTokenAmount );
+      uint256 vaultOutputAmount =  _vaultOutputAmount( reserveTokenAmount, currencyToClaim );
         
         
       MintableERC20(_reservePoolToken).burn(msg.sender,  reserveTokenAmount ); 
       
        
-      IERC20(_stakeableCurrency).transfer( msg.sender, vaultOutputAmount );
+      IERC20(currencyToClaim).transfer( msg.sender, vaultOutputAmount );
        
       
       
@@ -193,13 +193,13 @@ contract MinersGuild is
   
   
     //amount of output tokens to give to redeemer
-  function _vaultOutputAmount(   uint256 reserveTokenAmount ) public view returns (uint){
+  function _vaultOutputAmount(   uint256 reserveTokenAmount, address currencyToClaim ) public view returns (uint){
+
+      uint256 internalVaultBalance = IERC20(currencyToClaim ).balanceOf(address(this));
+      
 
       uint256 totalReserveTokens = IERC20(_reservePoolToken).totalSupply();
-
-
-      uint256 internalVaultBalance = IERC20(_stakeableCurrency ).balanceOf(address(this));
-      
+ 
        
       uint256 burnedTokenRatio = (reserveTokenAmount*100000000) / totalReserveTokens  ;
       

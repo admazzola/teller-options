@@ -112,7 +112,7 @@ describe("EIP712 Contract Testing", function() {
       let reserveMinted =  await contractInstances['guild'].methods._reserveTokensMinted(500).call()
       expect( parseInt( reserveMinted ) ).to.equal(  499 );
 
-      let outputAmount =  await contractInstances['guild'].methods._vaultOutputAmount(499).call()
+      let outputAmount =  await contractInstances['guild'].methods._vaultOutputAmount(499, contractInstances['stakeabletoken'].options.address ).call()
       expect( parseInt( outputAmount ) ).to.equal(  498 );
 
  
@@ -120,14 +120,14 @@ describe("EIP712 Contract Testing", function() {
        myBalance = await TestHelper.getERC20Balance( contractInstances['stakeabletoken'] , primaryAccountAddress   )
        expect( parseInt(myBalance) ).to.equal( 7000 );
 
-       await contractInstances['guild'].methods.unstakeCurrency(100).send({from: primaryAccountAddress,  gasLimit: 8000000 })
+       await contractInstances['guild'].methods.unstakeCurrency(100, contractInstances['stakeabletoken'].options.address).send({from: primaryAccountAddress,  gasLimit: 8000000 })
        myBalance = await TestHelper.getERC20Balance( contractInstances['stakeabletoken'] , primaryAccountAddress   )
        expect( parseInt(myBalance) ).to.equal( 7099 );
 
 
        await contractInstances['stakeabletoken'].methods.transfer(contractInstances['guild'].options.address, 1000).send({from: secondaryAccountAddress})
      
-       outputAmount =  await contractInstances['guild'].methods._vaultOutputAmount(499).call()
+       outputAmount =  await contractInstances['guild'].methods._vaultOutputAmount(499, contractInstances['stakeabletoken'].options.address).call()
        expect( parseInt( outputAmount ) ).to.equal(  671  );
 
 
@@ -137,7 +137,7 @@ describe("EIP712 Contract Testing", function() {
        myReserve = await TestHelper.getERC20Balance( contractInstances['reservetoken'] , primaryAccountAddress   )
        expect( parseInt(myReserve) ).to.equal( 2643 );
 
-         outputAmount =  await contractInstances['guild'].methods._vaultOutputAmount(743).call()
+         outputAmount =  await contractInstances['guild'].methods._vaultOutputAmount(743, contractInstances['stakeabletoken'].options.address).call()
        expect( parseInt( outputAmount ) ).to.equal(  999 );
  
       // await contractInstances['guild'].methods.reserveTokensMinted(contractInstances['guild'].options.address, 1000, '0x0').send({from: primaryAccountAddress,  gasLimit: 8000000 })
