@@ -123,7 +123,7 @@ contract MinersGuild is
   address public _stakeableCurrency; 
   address public _reservePoolToken; 
    
-   
+  event Donation(address from, uint256 amount);
    
   constructor(  address stakeableCurrency, address reservePoolToken  ) 
   { 
@@ -132,18 +132,23 @@ contract MinersGuild is
    _reservePoolToken = reservePoolToken;
   }
   
-  
+  function donateCurrency(address from, uint256 currencyAmount) public returns (bool){
+
+     require( IERC20(_stakeableCurrency).transferFrom(from, address(this), currencyAmount ), 'transfer failed'  );
+     
+     emit Donation(from,currencyAmount);
+
+     return true; 
+  }
  
   
   function stakeCurrency( address from,  uint256 currencyAmount ) public returns (bool){
        
-     uint256 reserveTokensMinted = _reserveTokensMinted(  currencyAmount) ;
+      uint256 reserveTokensMinted = _reserveTokensMinted(  currencyAmount) ;
      
-      require( IERC20(_stakeableCurrency).transferFrom(from, address(this), currencyAmount ), 'unable to stake'  );
-       
-      
-      //mint reserve token for the staker   - REVERTING 
-       MintableERC20(_reservePoolToken).mint(from,  reserveTokensMinted) ;
+      require( IERC20(_stakeableCurrency).transferFrom(from, address(this), currencyAmount ), 'transfer failed'  );
+          
+      MintableERC20(_reservePoolToken).mint(from,  reserveTokensMinted) ;
       
      return true; 
   }
@@ -158,7 +163,7 @@ contract MinersGuild is
       MintableERC20(_reservePoolToken).burn(msg.sender,  reserveTokenAmount ); 
       
        
-       IERC20(_stakeableCurrency).transfer( msg.sender, vaultOutputAmount );
+      IERC20(_stakeableCurrency).transfer( msg.sender, vaultOutputAmount );
        
       
       
@@ -175,9 +180,9 @@ contract MinersGuild is
       uint256 internalVaultBalance =  IERC20(_stakeableCurrency).balanceOf(address(this)); 
       
      
-       if(totalReserveTokens == 0 || internalVaultBalance == 0 ){
+      if(totalReserveTokens == 0 || internalVaultBalance == 0 ){
         return currencyAmount;
-       }
+      }
       
       
       uint256 incomingTokenRatio = (currencyAmount*10000) / internalVaultBalance;
