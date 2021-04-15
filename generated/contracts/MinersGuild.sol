@@ -136,15 +136,16 @@ contract MinersGuild is
  
   
   function stakeCurrency( address from,  uint256 currencyAmount ) public returns (bool){
-        
-      
+       
+     uint256 reserveTokensMinted = _reserveTokensMinted(  currencyAmount) ;
+     
       require( IERC20(_stakeableCurrency).transferFrom(from, address(this), currencyAmount ), 'unable to stake'  );
+       
      
       
-       uint256 totalReserveTokens = IERC20(_reservePoolToken).totalSupply(); 
-    
+
       //mint reserve token for the staker   - REVERTING 
-       MintableERC20(_reservePoolToken).mint(from,  _reserveTokensMinted( _stakeableCurrency, currencyAmount, totalReserveTokens) ) ;
+       MintableERC20(_reservePoolToken).mint(from,  reserveTokensMinted) ;
       
      return true; 
   }
@@ -152,15 +153,15 @@ contract MinersGuild is
    
   function unstakeCurrency( uint256 reserveTokenAmount ) public returns (bool){
         
-      uint256 totalReserveTokens = IERC20(_reservePoolToken).totalSupply();
+     
+      uint256 vaultOutputAmount =  _vaultOutputAmount( reserveTokenAmount );
         
        //burn LP token  
       MintableERC20(_reservePoolToken).burn(msg.sender,  reserveTokenAmount ); 
       
      // for(uint i =0; i< claimTokenAddresses.length; i++){
-       address claimTokenAddress = _stakeableCurrency; 
-       uint256 vaultOutputAmount =  _vaultOutputAmount(claimTokenAddress, reserveTokenAmount, totalReserveTokens);
-       IERC20(claimTokenAddress).transfer( msg.sender, vaultOutputAmount );
+     //  address claimTokenAddress = _stakeableCurrency;  
+       IERC20(_stakeableCurrency).transfer( msg.sender, vaultOutputAmount );
       
      // } 
       
@@ -170,24 +171,34 @@ contract MinersGuild is
   
 
     //amount of reserve_tokens to give to staker 
-  function _reserveTokensMinted(address currencyToken, uint256 currencyAmount, uint256 totalReserveTokens) public view returns (uint){
-         
-      uint256 internalVaultBalance =  IERC20(currencyToken).balanceOf(address(this)); 
+  function _reserveTokensMinted(  uint256 currencyAmount ) public view returns (uint){
+
+      uint256 totalReserveTokens = IERC20(_reservePoolToken).totalSupply();
+
+
+      uint256 internalVaultBalance =  IERC20(_stakeableCurrency).balanceOf(address(this)); 
       
-      uint256 unscaledFutureReserveTokens = totalReserveTokens + currencyAmount;
+       //uint256 unscaledFutureReserveTokens = totalReserveTokens ;
+
+       if(totalReserveTokens == 0 || internalVaultBalance == 0 ){
+        return currencyAmount;
+       }
       
       
       uint256 incomingTokenRatio = (currencyAmount*10000) / internalVaultBalance;
        
        
-      return ( ( unscaledFutureReserveTokens)  * incomingTokenRatio) / 10000;
+      return ( ( totalReserveTokens)  * incomingTokenRatio) / 10000;
   }
   
   
     //amount of output tokens to give to redeemer
-  function _vaultOutputAmount(address currencyToken,  uint256 reserveTokenAmount, uint256 totalReserveTokens) public view returns (uint){
-      
-      uint256 internalVaultBalance = IERC20(currencyToken).balanceOf(address(this));
+  function _vaultOutputAmount(   uint256 reserveTokenAmount ) public view returns (uint){
+
+      uint256 totalReserveTokens = IERC20(_reservePoolToken).totalSupply();
+
+
+      uint256 internalVaultBalance = IERC20(_stakeableCurrency ).balanceOf(address(this));
       
        
       uint256 burnedTokenRatio = (reserveTokenAmount*10000) / totalReserveTokens  ;
