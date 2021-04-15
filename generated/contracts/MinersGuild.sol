@@ -185,10 +185,10 @@ contract MinersGuild is
       }
       
       
-      uint256 incomingTokenRatio = (currencyAmount*10000) / internalVaultBalance;
+      uint256 incomingTokenRatio = (currencyAmount*100000000) / internalVaultBalance;
        
        
-      return ( ( totalReserveTokens)  * incomingTokenRatio) / 10000;
+      return ( ( totalReserveTokens)  * incomingTokenRatio) / 100000000;
   }
   
   
@@ -201,10 +201,10 @@ contract MinersGuild is
       uint256 internalVaultBalance = IERC20(_stakeableCurrency ).balanceOf(address(this));
       
        
-      uint256 burnedTokenRatio = (reserveTokenAmount*10000) / totalReserveTokens  ;
+      uint256 burnedTokenRatio = (reserveTokenAmount*100000000) / totalReserveTokens  ;
       
        
-      return (internalVaultBalance * burnedTokenRatio) / 10000   ;
+      return (internalVaultBalance * burnedTokenRatio) / 100000000;
   }
 
  

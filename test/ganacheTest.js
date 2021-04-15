@@ -128,7 +128,7 @@ describe("EIP712 Contract Testing", function() {
        await contractInstances['stakeabletoken'].methods.transfer(contractInstances['guild'].options.address, 1000).send({from: secondaryAccountAddress})
      
        outputAmount =  await contractInstances['guild'].methods._vaultOutputAmount(499).call()
-       expect( parseInt( outputAmount ) ).to.equal(  670  );
+       expect( parseInt( outputAmount ) ).to.equal(  671  );
 
 
        //test in and out after donation 
