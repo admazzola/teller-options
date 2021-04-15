@@ -10,13 +10,15 @@ const createBuildFolder = () => {
 	fs.emptyDirSync(buildPath);
 }
 
-const contractFolderPath = path.resolve('generated', 'contracts');
+const contractFolderPath = path.resolve( 'generated','contracts');
 
 const buildSources = () => {
   const sources = {};
   const contractsFiles = fs.readdirSync(contractFolderPath);
   
   contractsFiles.forEach(file => {
+	console.log('file',file )
+
     const contractFullPath = path.resolve(contractFolderPath, file);
     sources[file] = {
       content: fs.readFileSync(contractFullPath, 'utf8')
@@ -41,8 +43,16 @@ const input = {
 }
 
 
+var compileOutput = JSON.parse(solc.compile(JSON.stringify(input)))
+
+if(compileOutput. errors){
+	console.log('input',  compileOutput.errors )
+
+}
+
+
 const compileContracts = () => {
-	const compiledContracts = JSON.parse(solc.compile(JSON.stringify(input))).contracts;
+	const compiledContracts = compileOutput.contracts;
 
     console.log('compiledContracts:',compiledContracts)
 	for (let contract in compiledContracts) {
