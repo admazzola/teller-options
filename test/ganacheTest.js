@@ -4,13 +4,8 @@ import path from 'path'
 
 import ganache from 'ganache-cli' 
 import  Web3 from 'web3' 
-
-import ethUtil from 'ethereumjs-util'
-
  
-import EIP712Utils from '../lib/EIP712Utils.js'
-
-import EIP712Helper from '../lib/EIP712Helper.js'
+import TestHelper from './test-helper.js'
 
 let testAccount = {
   publicAddress: '0x95eDA452256C1190947f9ba1fD19422f0120858a',
@@ -34,30 +29,36 @@ const web3 = new Web3(provider, null, OPTIONS);
 
 let customConfigJSON = fs.readFileSync(path.join('eip712-config.json'));
 let customConfig = JSON.parse(customConfigJSON)
+ 
 
-//const { abi, evm } = require('../compile');
-let contractJSON = fs.readFileSync(path.join('generated/built/MyFirstContract.json'));
-let contractData = JSON.parse(contractJSON)
 
-let abi = contractData.abi
-let evm = contractData.evm
+let tokenContractJSON = fs.readFileSync(path.join('generated/built/MintableToken.json'));
+let tokenContractData = JSON.parse(tokenContractJSON)
+
+
+let guildContractJSON = fs.readFileSync(path.join('generated/built/MinersGuild.json'));
+let guildContractData = JSON.parse(guildContractJSON)
+
+//let abi = contractData.abi
+//let evm = contractData.evm
 
 describe("EIP712 Contract Testing", function() {
     it("deploys contract", async function() {
-
-      ///let accounts = await web3.eth.getAccounts()
-      let chainId = await web3.eth.net.getId()
-
+ 
+     
       let primaryAccountAddress = testAccount.publicAddress
 
-      let myEIP712Contract = await new web3.eth.Contract(abi)
-          .deploy({data: "0x" + evm.bytecode.object, arguments: [chainId]})
-          .send({from:  primaryAccountAddress, gas: 5000000});
-  
-      let contractAddress = myEIP712Contract.options.address
-      console.log("deployed contract at ", contractAddress)
 
+      let stakeableTokenContractInstance = await TestHelper.deployContract(tokenContractData ,primaryAccountAddress, web3, [8])
+      let reserveTokenContractInstance = await TestHelper.deployContract(tokenContractData ,primaryAccountAddress, web3, [8])
 
+      let guildContractInstance = await TestHelper.deployContract(guildContractData ,primaryAccountAddress, web3, [stakeableTokenContractInstance.options.address, reserveTokenContractInstance.options.address])
+
+     
+   
+      console.log("deployed contract at ", guildContractInstance.options.address)
+
+      return 
 
       /*
       MAKE SURE YOU CHANGE THIS VARIABLE IF YOU MODIFY eip712-config.json!!!
