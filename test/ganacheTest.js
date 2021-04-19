@@ -57,7 +57,8 @@ describe("EIP712 Contract Testing", function() {
      
      // let primaryAccountAddress = testAccount.publicAddress
 
-
+     contractInstances['auxiliarytoken'] = await TestHelper.deployContract(tokenContractData ,primaryAccountAddress, web3, [8])
+     
      contractInstances['stakeabletoken'] = await TestHelper.deployContract(tokenContractData ,primaryAccountAddress, web3, [8])
      contractInstances['reservetoken'] = await TestHelper.deployContract(tokenContractData ,primaryAccountAddress, web3, [8])
 
@@ -81,6 +82,7 @@ describe("EIP712 Contract Testing", function() {
       await contractInstances['stakeabletoken'].methods.mint(primaryAccountAddress, 9000).send({from: primaryAccountAddress})
       await contractInstances['stakeabletoken'].methods.mint(secondaryAccountAddress, 9000).send({from: primaryAccountAddress})
 
+      await contractInstances['auxiliarytoken'].methods.mint(secondaryAccountAddress, 9000).send({from: primaryAccountAddress})
 
      
       let myBalance = await TestHelper.getERC20Balance( contractInstances['stakeabletoken'] , primaryAccountAddress   )
@@ -146,8 +148,61 @@ describe("EIP712 Contract Testing", function() {
        expect( parseInt( outputAmount ) ).to.equal(  999 );
  
      
+
+      
      
     });
- 
+
+    it("approve call secondary token fails ", async function() {
+
+      let myBalance = await TestHelper.getERC20Balance( contractInstances['auxiliarytoken'] , secondaryAccountAddress   )
+      expect( parseInt(myBalance) ).to.equal( 9000 );
+
+      let failed; 
+      try{
+        await contractInstances['auxiliarytoken'].methods.approveAndCall(contractInstances['guild'].options.address, 1000, '0x0').send({from: secondaryAccountAddress,  gasLimit: 8000000 })
+      }catch(e){
+        failed = true;
+      }
+
+      expect(failed).to.equal(true)
+     
+    });
+
+
+     it("transfer secondary token succeeds ", async function() {
+
+      let myBalance = await TestHelper.getERC20Balance( contractInstances['auxiliarytoken'] , secondaryAccountAddress   )
+      expect( parseInt(myBalance) ).to.equal( 9000 );
+
+      await contractInstances['auxiliarytoken'].methods.transfer(contractInstances['guild'].options.address, 1000 ).send({from: secondaryAccountAddress,  gasLimit: 8000000 })
+      myBalance = await TestHelper.getERC20Balance( contractInstances['auxiliarytoken'] , secondaryAccountAddress   )
+      expect( parseInt(myBalance) ).to.equal( 8000 );
+      
+
+      let outputAmount =  await contractInstances['guild'].methods._vaultOutputAmount(100, contractInstances['auxiliarytoken'].options.address).call()
+      expect( parseInt( outputAmount ) ).to.equal(  27 );
+
+      let myReserve = await TestHelper.getERC20Balance( contractInstances['reservetoken'] , primaryAccountAddress   )
+      expect( parseInt(myReserve) ).to.equal( 2643 );
+
+      await contractInstances['guild'].methods.unstakeCurrency(100, contractInstances['auxiliarytoken'].options.address).send({from: primaryAccountAddress,  gasLimit: 8000000 })
+       
+      outputAmount =  await contractInstances['guild'].methods._vaultOutputAmount(100, contractInstances['auxiliarytoken'].options.address).call()
+      expect( parseInt( outputAmount ) ).to.equal(  27 ); 
+
+        myReserve = await TestHelper.getERC20Balance( contractInstances['reservetoken'] , primaryAccountAddress   )
+       expect( parseInt(myReserve) ).to.equal( 2543 );
+
+      myBalance = await TestHelper.getERC20Balance( contractInstances['auxiliarytoken'] , primaryAccountAddress   )
+      expect( parseInt(myBalance) ).to.equal( 27 );
+
+
+
+    });
+
+
+
+
  
   });
