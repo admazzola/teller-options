@@ -40,6 +40,9 @@ const web3 = new Web3(provider, null, OPTIONS);
 let tokenContractJSON = fs.readFileSync(path.join('generated/built/MintableToken.json'));
 let tokenContractData = JSON.parse(tokenContractJSON)
 
+let hackytokenContractJSON = fs.readFileSync(path.join('generated/built/HackyToken.json'));
+let hackytokenContractData = JSON.parse(hackytokenContractJSON)
+
 
 let guildContractJSON = fs.readFileSync(path.join('generated/built/MinersGuild.json'));
 let guildContractData = JSON.parse(guildContractJSON)
@@ -56,15 +59,18 @@ describe("EIP712 Contract Testing", function() {
  
      
      // let primaryAccountAddress = testAccount.publicAddress
-
-     contractInstances['auxiliarytoken'] = await TestHelper.deployContract(tokenContractData ,primaryAccountAddress, web3, [8])
+      
      
      contractInstances['stakeabletoken'] = await TestHelper.deployContract(tokenContractData ,primaryAccountAddress, web3, [8])
      contractInstances['reservetoken'] = await TestHelper.deployContract(tokenContractData ,primaryAccountAddress, web3, [8])
 
      contractInstances['guild'] = await TestHelper.deployContract(guildContractData ,primaryAccountAddress, web3, [contractInstances['stakeabletoken'].options.address, contractInstances['reservetoken'].options.address])
 
+
      
+     contractInstances['auxiliarytoken'] = await TestHelper.deployContract(tokenContractData ,primaryAccountAddress, web3, [8])
+     contractInstances['hackytoken'] = await TestHelper.deployContract(hackytokenContractData ,primaryAccountAddress, web3, [8])
+    
    
       //console.log("deployed contract at ", contractInstances['guild'].options.address)
       expect( contractInstances['guild'].options.address ).to.exist;
