@@ -67,7 +67,7 @@ describe("EIP712 Contract Testing", function() {
      contractInstances['guild'] = await TestHelper.deployContract(guildContractData ,primaryAccountAddress, web3, [contractInstances['stakeabletoken'].options.address, contractInstances['reservetoken'].options.address])
 
 
-     
+
      contractInstances['auxiliarytoken'] = await TestHelper.deployContract(tokenContractData ,primaryAccountAddress, web3, [8])
      contractInstances['hackytoken'] = await TestHelper.deployContract(hackytokenContractData ,primaryAccountAddress, web3, [8])
     
@@ -189,6 +189,11 @@ describe("EIP712 Contract Testing", function() {
       let outputAmount =  await contractInstances['guild'].methods._vaultOutputAmount(100, contractInstances['auxiliarytoken'].options.address).call()
       expect( parseInt( outputAmount ) ).to.equal(  27 );
 
+
+      outputAmount =  await contractInstances['guild'].methods._vaultOutputAmount(2543, contractInstances['stakeabletoken'].options.address ).call()
+      expect( parseInt( outputAmount ) ).to.equal(  3421 );
+
+
       let myReserve = await TestHelper.getERC20Balance( contractInstances['reservetoken'] , primaryAccountAddress   )
       expect( parseInt(myReserve) ).to.equal( 2643 );
 
@@ -204,6 +209,12 @@ describe("EIP712 Contract Testing", function() {
       expect( parseInt(myBalance) ).to.equal( 27 );
 
 
+
+      outputAmount =  await contractInstances['guild'].methods._vaultOutputAmount(2543, contractInstances['stakeabletoken'].options.address ).call()
+      expect( parseInt( outputAmount ) ).to.equal(  3517 );
+
+      outputAmount =  await contractInstances['guild'].methods._vaultOutputAmount(2543, contractInstances['auxiliarytoken'].options.address).call()
+      expect( parseInt( outputAmount ) ).to.equal(  698 );
 
     });
 
