@@ -80,18 +80,20 @@ describe("EIP712 Contract Testing", function() {
  
       await contractInstances['stakeabletoken'].methods.mint(primaryAccountAddress, 9000).send({from: primaryAccountAddress})
       await contractInstances['stakeabletoken'].methods.mint(secondaryAccountAddress, 9000).send({from: primaryAccountAddress})
-      
+
+
+     
       let myBalance = await TestHelper.getERC20Balance( contractInstances['stakeabletoken'] , primaryAccountAddress   )
       expect( parseInt(myBalance) ).to.equal( 9000 );
 
 
+      //secondary account stakes 1000 
       await contractInstances['stakeabletoken'].methods.approveAndCall(contractInstances['guild'].options.address, 1000, '0x0').send({from: secondaryAccountAddress,  gasLimit: 8000000 })
 
 
 
-    //  await contractInstances['stakeabletoken'].methods.transfer(contractInstances['guild'].options.address, 1000).send({from: primaryAccountAddress})
      
-
+       //primary account stakes 1000 
       await contractInstances['stakeabletoken'].methods.approveAndCall(contractInstances['guild'].options.address, 1000, '0x0').send({from: primaryAccountAddress,  gasLimit: 8000000 })
 
       myBalance = await TestHelper.getERC20Balance( contractInstances['stakeabletoken'] , primaryAccountAddress   )
@@ -120,69 +122,32 @@ describe("EIP712 Contract Testing", function() {
        myBalance = await TestHelper.getERC20Balance( contractInstances['stakeabletoken'] , primaryAccountAddress   )
        expect( parseInt(myBalance) ).to.equal( 7000 );
 
+
+        // primary account unstakes 100 shares  , has 900 shares left 
        await contractInstances['guild'].methods.unstakeCurrency(100, contractInstances['stakeabletoken'].options.address).send({from: primaryAccountAddress,  gasLimit: 8000000 })
        myBalance = await TestHelper.getERC20Balance( contractInstances['stakeabletoken'] , primaryAccountAddress   )
        expect( parseInt(myBalance) ).to.equal( 7099 );
 
-
+        //1000 tokens are donated 
        await contractInstances['stakeabletoken'].methods.transfer(contractInstances['guild'].options.address, 1000).send({from: secondaryAccountAddress})
      
        outputAmount =  await contractInstances['guild'].methods._vaultOutputAmount(499, contractInstances['stakeabletoken'].options.address).call()
        expect( parseInt( outputAmount ) ).to.equal(  671  );
 
 
-       //test in and out after donation 
- 
+       
+         // primary account stakes 1000 shares  
        await contractInstances['stakeabletoken'].methods.approveAndCall(contractInstances['guild'].options.address, 1000, '0x0').send({from: primaryAccountAddress,  gasLimit: 8000000 })
        myReserve = await TestHelper.getERC20Balance( contractInstances['reservetoken'] , primaryAccountAddress   )
        expect( parseInt(myReserve) ).to.equal( 2643 );
 
+        // primary account can unstake the shares they just added and will get out approximately the 0xBTC they put in 
          outputAmount =  await contractInstances['guild'].methods._vaultOutputAmount(743, contractInstances['stakeabletoken'].options.address).call()
        expect( parseInt( outputAmount ) ).to.equal(  999 );
  
-      // await contractInstances['guild'].methods.reserveTokensMinted(contractInstances['guild'].options.address, 1000, '0x0').send({from: primaryAccountAddress,  gasLimit: 8000000 })
-
+     
      
     });
  
-
-    /*
-    This is what you would do in your frontend to make metamask pop up 
-    This would output the signature value 
-
-
-     let signResult = await  EIP712Helper.signTypedData( web3, from, JSON.stringify(typedDatahash)  )
-         
-  
-     For this test only, the signature will be calculated from the pkey
-    */
-
-
-/*
-   
-    var privateKey = testAccount.secretKey;
-    var privKey = Buffer.from(privateKey.substring(2), 'hex')
  
-     
-
-
-    const sig = ethUtil.ecsign( typedDatahash   , privKey );
- 
-    var signature = ethUtil.toRpcSig(sig.v, sig.r, sig.s);
-    
-
-
-    let recoveredSigner = EIP712Utils.recoverPacketSigner(typedData, signature)
-    console.log('recoveredSigner', recoveredSigner )
-      
-
-      let args = Object.values(dataValues)
-      args.push(signature)
-
-      console.log('args', args )
-
-      let result = await myEIP712Contract.methods.verifyOffchainSignatureAndDoStuff(...args).send({from:  primaryAccountAddress })
-
-      console.log("result of method call: ", result)
-    });*/
   });
