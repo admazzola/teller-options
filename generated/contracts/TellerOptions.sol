@@ -1,12 +1,10 @@
- 
+
 
 pragma solidity ^0.8.0;
 
 
 /*
-
 Teller Options
-
 */
                                                                                  
   
@@ -194,14 +192,13 @@ interface IERC20 {
     /// @param _data Additional data with no specified format
     /// @return `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`
     ///  unless throwing
-    function onERC721Received(address _operator, address _from, uint256 _tokenId, bytes _data) external returns(bytes4);
+    function onERC721Received(address _operator, address _from, uint256 _tokenId, bytes calldata _data) external returns(bytes4);
 }
   
   
   /*
     Extensions:
     ability to buy and sell the option 
-
   */
   
   
@@ -321,9 +318,9 @@ contract TellerOptions is ERC721TokenReceiver {
    function onERC721Received(
         address operator,
         address from,
-        uint256 id,
+        uint256 tokenId,
         bytes calldata data
-    ) external returns (bytes4) {
+    ) external override returns (bytes4) {
 
         return
             bytes4(
