@@ -1,4 +1,4 @@
-## Miners Guild Contract 
+## Teller Options
 
 
 #### Getting Started
