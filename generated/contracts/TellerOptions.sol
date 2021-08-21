@@ -221,9 +221,9 @@ contract TellerOptions  {
   event OptionCreated(address from, uint256 amount);
 
 
-  uint256 optionsCount = 0;
+  uint256 public optionsCount = 0;
 
-  mapping(uint256 => Option) options;
+  mapping(uint256 => Option) public options;
 
   enum OptionStatus {
     undefined,created,filled,exercised,cancelled
@@ -246,8 +246,10 @@ contract TellerOptions  {
      
   }
 
+  uint256 immutable ONE_YEAR = 31536000;
 
-  function createOption(address nftContractAddress, uint256 tokenId, uint256 expirationTime, uint256 buyoutPriceWei ) public payable {
+  function createOption(address nftContractAddress, uint256 tokenId, uint256 expirationTime, uint256 buyoutPriceWei ) public payable returns (bool success) {
+    require(expirationTime > block.timestamp && expirationTime < block.timestamp + ONE_YEAR, 'invalid expiration time');
     uint256 incentiveAmountWei = msg.value; 
 
     //pull the NFT into escrow
@@ -256,41 +258,62 @@ contract TellerOptions  {
     //initialize the options struct data 
     options[optionsCount++] = Option(nftContractAddress,tokenId,expirationTime,buyoutPriceWei,incentiveAmountWei,msg.sender, address(0), OptionStatus.created);
 
-    
+    //emit 
+
+
+    return true; 
   }
 
   function cancelOption(uint256 optionId) public { 
     require(msg.sender == options[optionId].optionCreator, 'not the option creator');
-    require(options[optionId].status == OptionStatus.created 
-      || options[optionId].status == OptionStatus.filled  );
+   
+
+    OptionStatus originalStatus = options[optionId].status;
+    //set status to cancelled, mitigate re-entrancy 
+    options[optionId].status = OptionStatus.cancelled;  
+
+     require(originalStatus == OptionStatus.created 
+      || originalStatus == OptionStatus.filled  );
 
     //return the NFT to the creator
-
+      IERC721(options[optionId].nftContractAddress).safeTransferFrom(  address(this), options[optionId].optionCreator,  options[optionId].tokenId   );
   
     //return any buyout ether to the filler [if exists]
-
+      if(originalStatus == OptionStatus.filled){
+        payable(options[optionId].optionFiller).transfer( options[optionId].buyoutPriceWei );
+      }
 
   }
   
 
   function fulfillOption(uint256 optionId) public payable {
-    require(options[optionId].optionFiller == address(0), 'already filled');
+    require(options[optionId].status == OptionStatus.created, 'incorrect state');
     require(options[optionId].expirationTime > block.timestamp, 'already expired');
     require(msg.value == options[optionId].buyoutPriceWei,'incorrect ether value to escrow');
 
-    
+    //pull the buyoutpricewei into escrow and set option filled 
+    options[optionId].optionFiller = msg.sender;
+    options[optionId].status = OptionStatus.filled;
 
-    //pull the buyoutpricewei into escrow 
+    //send the incentive amount to the fulfiller 
+    payable(msg.sender).transfer(options[optionId].incentiveAmountWei);
   }
 
-  function exerciseOption() public {
+  function exerciseOption(uint256 optionId) public {
+    require(msg.sender == options[optionId].optionCreator);
+    require(options[optionId].status == OptionStatus.filled);
+    require(block.timestamp < options[optionId].expirationTime);
+
+      
+    options[optionId].status = OptionStatus.exercised;
 
     //send the buyout ether to the optionCreator
-    //address(msg.sender).transfer( msg.value   )
+    payable(options[optionId].optionCreator).transfer( options[optionId].buyoutPriceWei);
 
 
     //send the NFT to the optionFulfiller 
-
+    IERC721(options[optionId].nftContractAddress).safeTransferFrom(  address(this), options[optionId].optionFiller,  options[optionId].tokenId   );
+  
   }
    
     
