@@ -218,7 +218,7 @@ contract TellerOptions  {
   event Donation(address from, uint256 amount);*/
 
 
-  event OptionCreated(address from, uint256 amount);
+  event OptionCreated(address creator, uint256 optionId, address nftContractAddress, uint256 tokenId);
 
 
   uint256 public optionsCount = 0;
@@ -231,12 +231,12 @@ contract TellerOptions  {
 
   struct Option {
     address nftContractAddress;
-    uint256 tokenId;
-    uint256 expirationTime;
+    uint256 tokenId;    
     uint256 buyoutPriceWei;
     uint256 incentiveAmountWei;
     address optionCreator;
     address optionFiller;
+    uint256 startTime;
     OptionStatus status;
 
   }
@@ -247,26 +247,27 @@ contract TellerOptions  {
   }
 
   uint256 immutable ONE_YEAR = 31536000;
+  uint256 immutable ONE_MONTH = 2628000;
 
-  function createOption(address nftContractAddress, uint256 tokenId, uint256 expirationTime, uint256 buyoutPriceWei ) public payable returns (bool success) {
-    require(expirationTime > block.timestamp && expirationTime < block.timestamp + ONE_YEAR, 'invalid expiration time');
+  function createOption(address nftContractAddress, uint256 tokenId, uint256 buyoutPriceWei ) public payable returns (bool success) {
+   
     uint256 incentiveAmountWei = msg.value; 
 
     //pull the NFT into escrow
     IERC721(nftContractAddress).safeTransferFrom( msg.sender, address(this),  tokenId   );
 
     //initialize the options struct data 
-    options[optionsCount++] = Option(nftContractAddress,tokenId,expirationTime,buyoutPriceWei,incentiveAmountWei,msg.sender, address(0), OptionStatus.created);
+    options[optionsCount++] = Option(nftContractAddress,tokenId,buyoutPriceWei,incentiveAmountWei,msg.sender, address(0), 0, OptionStatus.created);
 
     //emit 
-
+    emit OptionCreated(msg.sender, optionsCount-1, nftContractAddress, tokenId );
 
     return true; 
   }
 
+  
   function cancelOption(uint256 optionId) public { 
-    require(msg.sender == options[optionId].optionCreator, 'not the option creator');
-   
+    require(msg.sender == options[optionId].optionCreator, 'not the option creator');   
 
     OptionStatus originalStatus = options[optionId].status;
     //set status to cancelled, mitigate re-entrancy 
@@ -284,25 +285,45 @@ contract TellerOptions  {
       }
 
   }
-  
+
+
+  function expireOption(uint256 optionId) public {    
+    require(options[optionId].status == OptionStatus.filled, 'incorrect state');
+    require(block.timestamp >= (options[optionId].startTime + ONE_YEAR) , 'not expired');
+
+     
+    options[optionId].status = OptionStatus.cancelled;  
+
+    //return the NFT to the creator
+    IERC721(options[optionId].nftContractAddress).safeTransferFrom(  address(this), options[optionId].optionCreator,  options[optionId].tokenId   );
+
+    //return any buyout ether to the filler [if exists] 
+    payable(options[optionId].optionFiller).transfer( options[optionId].buyoutPriceWei );
+    
+
+  }
+
+
 
   function fulfillOption(uint256 optionId) public payable {
-    require(options[optionId].status == OptionStatus.created, 'incorrect state');
-    require(options[optionId].expirationTime > block.timestamp, 'already expired');
+    require(options[optionId].status == OptionStatus.created, 'incorrect state'); 
     require(msg.value == options[optionId].buyoutPriceWei,'incorrect ether value to escrow');
 
     //pull the buyoutpricewei into escrow and set option filled 
     options[optionId].optionFiller = msg.sender;
     options[optionId].status = OptionStatus.filled;
+    options[optionId].startTime = block.timestamp;
 
     //send the incentive amount to the fulfiller 
     payable(msg.sender).transfer(options[optionId].incentiveAmountWei);
   }
 
+
+
   function exerciseOption(uint256 optionId) public {
-    require(msg.sender == options[optionId].optionCreator);
-    require(options[optionId].status == OptionStatus.filled);
-    require(block.timestamp < options[optionId].expirationTime);
+    require(msg.sender == options[optionId].optionCreator, 'not option creator');
+    require(options[optionId].status == OptionStatus.filled, 'incorrect state');
+    require(block.timestamp < (options[optionId].startTime + ONE_YEAR) , 'expired');
 
       
     options[optionId].status = OptionStatus.exercised;
